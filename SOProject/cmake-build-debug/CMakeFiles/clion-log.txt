@@ -1,0 +1,4 @@
+/home/kali/Desktop/clion-2021.1.1/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/kali/CLionProjects/SOProject
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/kali/CLionProjects/SOProject/cmake-build-debug
