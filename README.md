@@ -1,2 +1,2 @@
-# NarrowBridgeProblem
-Solution for narrow brigde problem using mutex and condition variables
+# ReaderWriter
+Solution for Library problem using mutex and condition variables
