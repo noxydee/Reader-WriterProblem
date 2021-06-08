@@ -40,7 +40,7 @@ void* ReaderFX(void* ID)
         NumberOfReadersInside+=1;
         //printf("Reader %d is inside\n",IDX);
 
-        printf("ReaderQ:%d WriterQ:%d [in: R:%d W:%d]\n",NumberOfReadersWaiting,NumberOfWritersWaiting,NumberOfReadersInside,NumberOfWritersInside);
+        printf("ReaderQ:%d WriterQ:%d [in: R:%d W:%d]\n",NumberOfReaders-NumberOfReadersInside,NumberOfWriters-NumberOfWritersInside,NumberOfReadersInside,NumberOfWritersInside);
         pthread_mutex_unlock(&SyncMutex);
         pthread_cond_broadcast(&ReaderCanRead);
 
@@ -53,6 +53,7 @@ void* ReaderFX(void* ID)
         }
         pthread_mutex_unlock(&SyncMutex);
         x+=1;
+
     }
 }
 
@@ -62,7 +63,7 @@ void* WriterFX(void* ID)
     int x=0;
     while(x<100)
     {
-        sleep(2);
+        sleep(1);
 
         pthread_mutex_lock(&SyncMutex);
 
