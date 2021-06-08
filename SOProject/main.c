@@ -1,96 +1,129 @@
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <semaphore.h>
 #include <unistd.h>
-#include <sys/types.h>
+#include <pthread.h>
 
-sem_t MXReader;
-sem_t MXWriter;
+int NumberOfReaders;
+int NumberOfWriters;
+int NumberOfReadersInside;
+int NumberOfWritersInside;
+int NumberOfReadersWaiting;
+int NumberOfWritersWaiting;
 
-int WritersNumber=0;
-int WritersCount=0;
-int ReaderNumber =0;
-int ReaderCount;
+pthread_cond_t ReaderCanRead;
+pthread_cond_t WriterCanWrite;
 
-void* Reader_FX(void* arg)
+pthread_mutex_t SyncMutex;
+
+void InitPThread()
 {
-    while(1)
-    {
-        sem_wait(&MXReader);
-        ReaderCount+=1;
-
-        if(ReaderCount==1)
-        {
-            sem_wait(&MXWriter);
-        }
-
-        sem_post(&MXReader);
-        printf("ReaderSleep");
-        sleep(2);
-        sem_wait(&MXReader);
-        ReaderCount-=1;
-
-        if(ReaderCount==0)
-        {
-            sem_post(&MXWriter);
-        }
-
-        sem_post(&MXReader);
-    }
+    pthread_cond_init(&ReaderCanRead,NULL);
+    pthread_cond_init(&WriterCanWrite,NULL);
+    pthread_mutex_init(&SyncMutex,NULL);
 }
 
-void* Writer_FX(void* arg){
-    while(1)
-    {
-        int* WriterNo = (int*)arg;
-        sem_wait(&MXWriter);
-        printf("WriterSleep");
-        sleep(2);
-        sem_post(&MXWriter);
-    }
-
-}
-
-void InitThreads()
+void* ReaderFX(void* ID)
 {
-    sem_init(&MXReader,0,1);
-    sem_init(&MXWriter,0,1);
-    int WriterArray[WritersNumber];
-
-    printf("ReaderSleep %d",WritersNumber);
-    pthread_t ReaderTH[ReaderNumber];
-    pthread_t WriterTH[WritersNumber];
-
-    for(int i=0;i<WritersNumber;i++)
+    int IDX = *(int*)ID;
+    int x=0;
+    while(x<100)
     {
-        WriterArray[i]=i;
-        pthread_create(&WriterTH[i],NULL,Writer_FX,&WriterArray[i]);
-    }
-    for(int i=0;i<ReaderNumber;i++)
-    {
-        pthread_create(&ReaderTH[i],NULL,Reader_FX,NULL);
-    }
-    for(int i=0;i<WritersNumber;i++)
-    {
-        pthread_join(WriterTH[i],NULL);
-    }
-    for(int i=0;i<ReaderNumber;i++)
-    {
-        pthread_join(ReaderTH[i],NULL);
-    }
+        sleep(1);
 
+        //try start reading
+        pthread_mutex_lock(&SyncMutex);
 
+        if(NumberOfWritersInside==1 || NumberOfWritersWaiting>0){
+            NumberOfReadersWaiting+=1;
+            pthread_cond_wait(&ReaderCanRead,&SyncMutex);
+            NumberOfReadersWaiting-=1;
+        }
+        NumberOfReadersInside+=1;
+        //printf("Reader %d is inside\n",IDX);
+
+        printf("ReaderQ:%d WriterQ:%d [in: R:%d W:%d]\n",NumberOfReadersWaiting,NumberOfWritersWaiting,NumberOfReadersInside,NumberOfWritersInside);
+        pthread_mutex_unlock(&SyncMutex);
+        pthread_cond_broadcast(&ReaderCanRead);
+
+        //try end
+        pthread_mutex_lock(&SyncMutex);
+        NumberOfReadersInside-=1;
+        if(NumberOfReadersInside==0)
+        {
+            pthread_cond_signal(&WriterCanWrite);
+        }
+        pthread_mutex_unlock(&SyncMutex);
+        x+=1;
+    }
 }
+
+void* WriterFX(void* ID)
+{
+    int IDX = *(int*)ID;
+    int x=0;
+    while(x<100)
+    {
+        sleep(2);
+
+        pthread_mutex_lock(&SyncMutex);
+
+        if(NumberOfWritersInside ==1 || NumberOfReadersInside>0)
+        {
+            NumberOfWritersWaiting+=1;
+            pthread_cond_wait(&WriterCanWrite,&SyncMutex);
+            NumberOfWritersWaiting-=1;
+        }
+        NumberOfWritersInside =1;
+        printf("ReaderQ:%d WriterQ:%d [in: R:%d W:%d]\n",NumberOfReaders-NumberOfReadersInside,NumberOfWriters-NumberOfWritersInside,NumberOfReadersInside,NumberOfWritersInside);
+        pthread_mutex_unlock(&SyncMutex);
+
+        pthread_mutex_lock(&SyncMutex);
+        NumberOfWritersInside =0;
+        if(NumberOfReadersWaiting>0)
+        {
+            pthread_cond_signal(&ReaderCanRead);
+        }
+        else
+        {
+            pthread_cond_signal(&WriterCanWrite);
+        }
+        pthread_mutex_unlock(&SyncMutex);
+        x++;
+    }
+}
+
+
 
 int main() {
+    NumberOfReaders=4;
+    NumberOfWriters=4;
+    NumberOfReadersInside=0;
+    NumberOfReadersInside=0;
+    NumberOfReadersWaiting=0;
+    NumberOfWritersWaiting=0;
+    InitPThread();
 
-    printf("ReaderSleep");
-    WritersNumber = 2;
-    ReaderNumber = 2;
-    InitThreads();
+    pthread_t Readers[NumberOfReaders],Writers[NumberOfWriters];
 
+    for(int i=0;i<NumberOfReaders;i++)
+    {
+        int ID = i+1;
+        pthread_create(&Readers[i],NULL,&ReaderFX,&ID);
+    }
+    for(int i=0;i<NumberOfWriters;i++)
+    {
+        int ID = i+1;
+        pthread_create(&Writers[i],NULL,&WriterFX,&ID);
+    }
+
+    for(int i=0;i<NumberOfReaders;i++)
+    {
+        pthread_join(Readers[i],NULL);
+    }
+    for(int i=0;i<NumberOfWriters;i++)
+    {
+        pthread_join(Writers[i],NULL);
+    }
+
+    //printf("Hello, World!\n");
     //return 0;
-
 }
