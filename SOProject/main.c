@@ -77,9 +77,9 @@ void* WriterFX(void* ID)
         }
         NumberOfWritersInside =1;
         printf("ReaderQ:%d WriterQ:%d [in: R:%d W:%d]\n",NumberOfReaders-NumberOfReadersInside,NumberOfWriters-NumberOfWritersInside,NumberOfReadersInside,NumberOfWritersInside);
-        pthread_mutex_unlock(&SyncMutex);
+        //pthread_mutex_unlock(&SyncMutex);
 
-        pthread_mutex_lock(&SyncMutex);
+        //pthread_mutex_lock(&SyncMutex);
         NumberOfWritersInside =0;
         if(NumberOfReadersWaiting>0)
         {
