@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <stdlib.h>
+#include <limits.h>
 
 int NumberOfReaders;
 int NumberOfWriters;
@@ -94,9 +96,9 @@ void* WriterFX(void* ID)
 
 
 
-int main() {
-    NumberOfReaders=4;
-    NumberOfWriters=4;
+int main(int argc,char *argv[]) {
+    NumberOfReaders=atoi(argv[1]);
+    NumberOfWriters=atoi(argv[2]);
     NumberOfReadersInside=0;
     NumberOfReadersInside=0;
     NumberOfReadersWaiting=0;
