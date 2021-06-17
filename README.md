@@ -1,2 +1,2 @@
 # ReaderWriter
-Solution for Library problem using mutex and condition variables
+Solution for Library(writer/reader) problem using mutex and conditional variables
